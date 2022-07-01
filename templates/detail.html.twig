@@ -5,5 +5,10 @@
     <h1>{{ task.name }}</h1>
     <p>Дата {{ task.createdAt|format_datetime('short', 'short', locale='ru') }}</p>
     {{ task.description|raw }}
+    <br>
+    <br>
+    <br>
+    <br>
+    <a href="{{ path('list') }}"><- Вернуться к списку</a>
 </div>
 {% endblock %}
