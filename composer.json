@@ -11,6 +11,7 @@
         "doctrine/doctrine-migrations-bundle": "^3.2",
         "doctrine/orm": "^2.12",
         "easycorp/easyadmin-bundle": "^4",
+        "knplabs/knp-paginator-bundle": "^5.8",
         "symfony/console": "6.1.*",
         "symfony/doctrine-messenger": "6.1.*",
         "symfony/dotenv": "6.1.*",
@@ -22,7 +23,9 @@
         "symfony/runtime": "6.1.*",
         "symfony/security-bundle": "6.1.*",
         "symfony/workflow": "6.1.*",
-        "symfony/yaml": "6.1.*"
+        "symfony/yaml": "6.1.*",
+        "twig/extra-bundle": "^3.4",
+        "twig/intl-extra": "^3"
     },
     "config": {
         "allow-plugins": {

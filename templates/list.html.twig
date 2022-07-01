@@ -1,0 +1,24 @@
+{% extends '@!EasyAdmin/layout.html.twig' %}
+
+{% block content %}
+    <div class="container">
+        <h1>{{ title }}</h1>
+
+        {% if pagination is empty %}
+            Нет актуальных задач
+        {% endif %}
+        {% for task in pagination %}
+            <div class="card" style="margin-bottom: 30px;">
+                <a href="{{ path('detail', { id: task.id }) }}" class="card-body">
+                    <p>{{ task.name }}</p>
+                    <p>Проект: {{ task.project }}</p>
+                    <p>Ответственный: {{ task.responsible }}</p>
+                </a>
+            </div>
+        {% endfor %}
+
+        <div class="navigation">
+            {{ knp_pagination_render(pagination) }}
+        </div>
+    </div>
+{% endblock %}

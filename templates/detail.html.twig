@@ -1,0 +1,9 @@
+{% extends '@!EasyAdmin/layout.html.twig' %}
+
+{% block content %}
+<div class="container">
+    <h1>{{ task.name }}</h1>
+    <p>Дата {{ task.createdAt|format_datetime('short', 'short', locale='ru') }}</p>
+    {{ task.description|raw }}
+</div>
+{% endblock %}
