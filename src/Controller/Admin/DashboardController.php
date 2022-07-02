@@ -11,6 +11,7 @@ use App\Entity\TaskType;
 use App\Entity\Team;
 use App\Entity\User;
 use App\Repository\TaskRepository;
+use App\Repository\UserRepository;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Dashboard;
 use EasyCorp\Bundle\EasyAdminBundle\Config\MenuItem;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractDashboardController;
@@ -210,7 +211,6 @@ class DashboardController extends AbstractDashboardController
         $index = 2;
 
         foreach ($tasks as $task) {
-
             $name = $task['responsibleLastName'] . " " . mb_substr($task['responsibleFirstName'], 0,
                     1) . ". " . mb_substr($task['responsibleSecondName'], 0, 1) . ".";
 
@@ -221,6 +221,151 @@ class DashboardController extends AbstractDashboardController
             $sheet->setCellValue('E' . $index, $task['status']);
             $sheet->setCellValue('F' . $index, $name);
             $sheet->setCellValue('G' . $index, $task['spenttime']);
+
+            $index++;
+        }
+
+        $sheet->setTitle("Отчет");
+
+        for ($i = 'A'; $i != $spreadsheet->getActiveSheet()->getHighestColumn(); $i++) {
+            $spreadsheet->getActiveSheet()->getColumnDimension($i)->setAutoSize(true);
+        }
+
+        $writer = new Xlsx($spreadsheet);
+
+        $temp_file = tempnam(sys_get_temp_dir(), $fileName);
+
+        $writer->save($temp_file);
+
+        // Return the excel file as an attachment
+        return $this->file($temp_file, $fileName, ResponseHeaderBag::DISPOSITION_INLINE);
+    }
+
+    #[Route('/reports/users', name: 'report-users', methods: ['GET'])]
+    public function users(Request $request, UserRepository $userRepository): Response
+    {
+        $from = $request->get('from');
+        $to = $request->get('to');
+
+        if (empty($from)) {
+            $from = new \DateTime();
+            $from->modify('-1 month');
+        } else {
+            $from = new \DateTime($from);
+        }
+
+        if (empty($to)) {
+            $to = new \DateTime();
+        } else {
+            $to = new \DateTime($to);
+        }
+
+        $from->setTime(0, 0);
+        $to->setTime(23, 59);
+
+        $tasks = $userRepository->createQueryBuilder('u')
+            ->leftJoin('u.tasks', 't')
+            ->select(['u', 't'])
+            ->andWhere('t.createdAt >= :from')
+            ->andWhere('t.createdAt <= :to')
+            ->setParameters([
+                'from' => $from,
+                'to' => $to
+            ])->getQuery()->getArrayResult();
+
+        $tasksResult = [];
+        foreach ($tasks as $t) {
+            $name = $t['lastName'] . " " . mb_substr($t['firstName'], 0,
+                    1) . ". " . mb_substr($t['secondName'], 0, 1) . ".";
+
+            $tasksResult[] = [
+                'count' => count($t['tasks']),
+                'name' => $name,
+                'time' => array_reduce($t['tasks'], function ($carry, $item) {
+                    return $carry + (float)$item['spenttime'];
+                }, 0). ' ч.',
+            ];
+        }
+
+        return $this->render('reports/users.html.twig', [
+            'from' => $from->format('Y-m-d'),
+            'to' => $to->format('Y-m-d'),
+            'tasks' => $tasksResult,
+            'headers' => [
+                'Исполнитель',
+                'Количество задач',
+                'Затрачено за отчетный период',
+            ],
+        ]);
+    }
+
+    #[Route('/reports/users-excel', name: 'report-users-excel', methods: ['GET'])]
+    public function usersExcel(Request $request, UserRepository $userRepository): Response
+    {
+        $from = $request->get('from');
+        $to = $request->get('to');
+
+        $fileName = 'users_report' . $from . '-' . $to . '.xlsx';
+        if (empty($from)) {
+            $from = new \DateTime();
+            $from->modify('-1 month');
+        } else {
+            $from = new \DateTime($from);
+        }
+
+        if (empty($to)) {
+            $to = new \DateTime();
+        } else {
+            $to = new \DateTime($to);
+        }
+
+        $from->setTime(0, 0);
+        $to->setTime(23, 59);
+//
+//        dump($from, $to); die();
+
+        $spreadsheet = new Spreadsheet();
+
+        $sheet = $spreadsheet->getActiveSheet();
+        $headers = [
+            'A' => 'Исполнитель',
+            'B' => 'Количество задач',
+            'C' => 'Затрачено за отчетный период',
+        ];
+        foreach ($headers as $letter => $header) {
+            $sheet->setCellValue($letter . "1", $header);
+        }
+
+        $tasks = $userRepository->createQueryBuilder('u')
+            ->leftJoin('u.tasks', 't')
+            ->select(['u', 't'])
+            ->andWhere('t.createdAt >= :from')
+            ->andWhere('t.createdAt <= :to')
+            ->setParameters([
+                'from' => $from,
+                'to' => $to
+            ])->getQuery()->getArrayResult();
+
+        $tasksResult = [];
+        foreach ($tasks as $t) {
+            $name = $t['lastName'] . " " . mb_substr($t['firstName'], 0,
+                    1) . ". " . mb_substr($t['secondName'], 0, 1) . ".";
+
+            $tasksResult[] = [
+                'count' => count($t['tasks']),
+                'name' => $name,
+                'time' => array_reduce($t['tasks'], function ($carry, $item) {
+                        return $carry + (float)$item['spenttime'];
+                    }, 0). ' ч.',
+            ];
+        }
+
+        $index = 2;
+
+        foreach ($tasksResult as $task) {
+            $sheet->setCellValue('A' . $index, $task['name']);
+            $sheet->setCellValue('B' . $index, $task['count']);
+            $sheet->setCellValue('C' . $index, $task['time']);
 
             $index++;
         }
@@ -259,7 +404,7 @@ class DashboardController extends AbstractDashboardController
 
             yield MenuItem::section('Отчеты');
             yield MenuItem::linkToRoute('Ресурсный учёт по задачам', 'fa-solid fa-align-justify', 'report-tasks');
-            yield MenuItem::linkToCrud('Ресурсный учёт по исполнителям', 'fa-solid fa-align-justify', Role::class);
+            yield MenuItem::linkToRoute('Ресурсный учёт по исполнителям', 'fa-solid fa-align-justify', 'report-users');
 
             yield MenuItem::section('Справочники');
             yield MenuItem::linkToCrud('Проекты', 'fa-solid fa-sitemap', Project::class);

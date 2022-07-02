@@ -3,11 +3,11 @@
 {% block content %}
     <div class="container">
         <br>
-        <h1>Ресурсный учёт по задачам</h1>
+        <h1>Ресурсный учёт по исполнителям</h1>
         <br>
         <br>
 
-        <form method="get" action="{{ path('report-tasks') }}">
+        <form method="get" action="{{ path('report-users') }}">
             <div class="input-group mb-3">
                 <div class="form-outline" style="margin-right: 30px;">
                     <label class="form-label">От</label>
@@ -33,7 +33,7 @@
         <br>
 
         {% if tasks is not empty %}
-            <a href="{{ path('report-tasks-excel', {from: from, to: to}) }}" class="btn btn-success">Скачать в Excel</a>
+            <a href="{{ path('report-users-excel', {from: from, to: to}) }}" class="btn btn-success">Скачать в Excel</a>
             <table class="table">
                 <thead>
                 <tr>
@@ -45,13 +45,9 @@
                 <tbody>
                 {% for task in tasks %}
                     <tr>
-                        <th scope="row">{{ task.id }}</th>
-                        <td>{{ task.createdAt|format_datetime('short', 'short', locale='ru') }}</td>
-                        <td>{{ task.project }}</td>
-                        <td>{{ task.name }}</td>
-                        <td>{{ task.status }}</td>
-                        <td>{{ task.responsible }}</td>
-                        <td>{{ task.spenttime }}</td>
+                        <th scope="row">{{ task.name }}</th>
+                        <td>{{ task.count }}</td>
+                        <td>{{ task.time }}</td>
                     </tr>
                 {% endfor %}
 
