@@ -1,0 +1,82 @@
+{% extends '@!EasyAdmin/layout.html.twig' %}
+
+{% block content %}
+    <div class="container">
+        <br>
+        <h1>Ресурсный учёт по задачам</h1>
+        <br>
+        <br>
+
+        <form method="get" action="{{ path('report-tasks') }}">
+            <div class="input-group mb-3">
+                <div class="form-outline" style="margin-right: 30px;">
+                    <label class="form-label">От</label>
+                    <input name="from" class="form-control" type="date" value="{{ from }}">
+                </div>
+                <br>
+
+                <div class="form-outline">
+                    <label class="form-label">До</label>
+                    <input name="to" class="form-control" type="date" value="{{ to }}">
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Построить отчет</button>
+
+
+            <input type="hidden" name="routeName" value="report-tasks">
+            <input type="hidden" name="submenuIndex" value="-1">
+            <input type="hidden" name="menuIndex" value="4">
+        </form>
+        <br>
+        <br>
+        <br>
+        <br>
+
+        {% if tasks is not empty %}
+            <a href="{{ path('report-tasks-excel', {from: from, to: to}) }}" class="btn btn-success">Скачать в Excel</a>
+            <table class="table">
+                <thead>
+                <tr>
+                    {% for header in headers %}
+                        <th scope="col">{{ header }}</th>
+                    {% endfor %}
+                </tr>
+                </thead>
+                <tbody>
+                {% for task in tasks %}
+                    <tr>
+                        <th scope="row">{{ task.id }}</th>
+                        <td>{{ task.createdAt|format_datetime('short', 'short', locale='ru') }}</td>
+                        <td>{{ task.project }}</td>
+                        <td>{{ task.name }}</td>
+                        <td>{{ task.status }}</td>
+                        <td>{{ task.responsible }}</td>
+                        <td>{{ task.spenttime }}</td>
+                    </tr>
+                {% endfor %}
+
+                </tbody>
+            </table>
+        {% endif %}
+    </div>
+    {# <div class="container"> #}
+    {# <h1>{{ title }}</h1> #}
+
+    {# {% if pagination is empty %} #}
+    {# Нет актуальных задач #}
+    {# {% endif %} #}
+    {# {% for task in pagination %} #}
+    {# <div class="card" style="margin-bottom: 30px;"> #}
+    {# <a href="{{ path('detail', { id: task.id }) }}" class="card-body"> #}
+    {# <p>{{ task.name }}</p> #}
+    {# <p>Проект: {{ task.project }}</p> #}
+    {# <p>Ответственный: {{ task.responsible }}</p> #}
+    {# </a> #}
+    {# </div> #}
+    {# {% endfor %} #}
+
+    {# <div class="navigation"> #}
+    {# {{ knp_pagination_render(pagination) }} #}
+    {# </div> #}
+    {# </div> #}
+{% endblock %}

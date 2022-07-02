@@ -15,8 +15,11 @@ use EasyCorp\Bundle\EasyAdminBundle\Config\Dashboard;
 use EasyCorp\Bundle\EasyAdminBundle\Config\MenuItem;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractDashboardController;
 use Knp\Component\Pager\PaginatorInterface;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Core\Security;
 
@@ -73,6 +76,171 @@ class DashboardController extends AbstractDashboardController
         return $this->render('list.html.twig', ['pagination' => $pagination, 'title' => 'Мои задачи']);
     }
 
+    #[Route('/reports/tasks', name: 'report-tasks', methods: ['GET'])]
+    public function tasks(Request $request, TaskRepository $taskRepository): Response
+    {
+        $from = $request->get('from');
+        $to = $request->get('to');
+
+        if (empty($from)) {
+            $from = new \DateTime();
+            $from->modify('-1 month');
+        } else {
+            $from = new \DateTime($from);
+        }
+
+        if (empty($to)) {
+            $to = new \DateTime();
+        } else {
+            $to = new \DateTime($to);
+        }
+
+        $tasks = $taskRepository->createQueryBuilder('t')
+            ->leftJoin('t.project', 'p')
+            ->leftJoin('t.status', 's')
+            ->leftJoin('t.responsible', 'r')
+            ->select([
+                'r.lastName as responsibleLastName',
+                'r.firstName as responsibleFirstName',
+                'r.secondName as responsibleSecondName',
+                'p.name as project',
+                's.name as status',
+                't.id',
+                't.name',
+                't.createdAt',
+                't.spenttime'
+            ])
+            ->andWhere('t.createdAt > :from')
+            ->andWhere('t.createdAt < :to')
+            ->setParameters([
+                'from' => $from,
+                'to' => $to
+            ])->getQuery()->getArrayResult();
+
+        $tasksResult = [];
+        foreach ($tasks as $t) {
+            $name = $t['responsibleLastName'] . " " . mb_substr($t['responsibleFirstName'], 0,
+                    1) . ". " . mb_substr($t['responsibleSecondName'], 0, 1) . ".";
+
+            $tasksResult[] = [
+                'id' => $t['id'],
+                'name' => $t['name'],
+                'createdAt' => $t['createdAt'],
+                'project' => $t['project'],
+                'status' => $t['status'],
+                'responsible' => $name,
+                'spenttime' => $t['spenttime'],
+            ];
+        }
+
+        return $this->render('reports/tasks.html.twig', [
+            'from' => $from->format('Y-m-d'),
+            'to' => $to->format('Y-m-d'),
+            'tasks' => $tasksResult,
+            'headers' => [
+                'Номер',
+                'Дата',
+                'Проект',
+                'Название',
+                'Статус',
+                'Исполнитель',
+                'Время'
+            ],
+        ]);
+    }
+
+    #[Route('/reports/tasks-excel', name: 'report-tasks-excel', methods: ['GET'])]
+    public function tasksExcel(Request $request, TaskRepository $taskRepository): Response
+    {
+        $from = $request->get('from');
+        $to = $request->get('to');
+
+        $fileName = 'tasks_report' . $from . '-' . $to . '.xlsx';
+        if (empty($from)) {
+            $from = new \DateTime();
+            $from->modify('-1 month');
+        } else {
+            $from = new \DateTime($from);
+        }
+
+        if (empty($to)) {
+            $to = new \DateTime();
+        } else {
+            $to = new \DateTime($to);
+        }
+
+        $spreadsheet = new Spreadsheet();
+
+        $sheet = $spreadsheet->getActiveSheet();
+        $headers = [
+            'A' => 'Номер',
+            'B' => 'Дата',
+            'C' => 'Проект',
+            'D' => 'Название',
+            'E' => 'Статус',
+            'F' => 'Исполнитель',
+            'G' => 'Время'
+        ];
+        foreach ($headers as $letter => $header) {
+            $sheet->setCellValue($letter . "1", $header);
+        }
+
+        $tasks = $taskRepository->createQueryBuilder('t')
+            ->leftJoin('t.project', 'p')
+            ->leftJoin('t.status', 's')
+            ->leftJoin('t.responsible', 'r')
+            ->select([
+                'p.name as project',
+                's.name as status',
+                'r.lastName as responsibleLastName',
+                'r.firstName as responsibleFirstName',
+                'r.secondName as responsibleSecondName',
+                't.id',
+                't.name',
+                't.createdAt',
+                't.spenttime'
+            ])
+            ->andWhere('t.createdAt > :from')
+            ->andWhere('t.createdAt < :to')
+            ->setParameters([
+                'from' => $from,
+                'to' => $to
+            ])->getQuery()->getArrayResult();
+
+        $index = 2;
+
+        foreach ($tasks as $task) {
+
+            $name = $task['responsibleLastName'] . " " . mb_substr($task['responsibleFirstName'], 0,
+                    1) . ". " . mb_substr($task['responsibleSecondName'], 0, 1) . ".";
+
+            $sheet->setCellValue('A' . $index, $task['id']);
+            $sheet->setCellValue('B' . $index, $task['createdAt']->format('d.m.Y H:i'));
+            $sheet->setCellValue('C' . $index, $task['project']);
+            $sheet->setCellValue('D' . $index, $task['name']);
+            $sheet->setCellValue('E' . $index, $task['status']);
+            $sheet->setCellValue('F' . $index, $name);
+            $sheet->setCellValue('G' . $index, $task['spenttime']);
+
+            $index++;
+        }
+
+        $sheet->setTitle("Отчет");
+
+        for ($i = 'A'; $i != $spreadsheet->getActiveSheet()->getHighestColumn(); $i++) {
+            $spreadsheet->getActiveSheet()->getColumnDimension($i)->setAutoSize(true);
+        }
+
+        $writer = new Xlsx($spreadsheet);
+
+        $temp_file = tempnam(sys_get_temp_dir(), $fileName);
+
+        $writer->save($temp_file);
+
+        // Return the excel file as an attachment
+        return $this->file($temp_file, $fileName, ResponseHeaderBag::DISPOSITION_INLINE);
+    }
+
     public function configureDashboard(): Dashboard
     {
         return Dashboard::new()
@@ -90,8 +258,8 @@ class DashboardController extends AbstractDashboardController
             yield MenuItem::linkToCrud('Пользователи', 'fas fa-users', User::class);
 
             yield MenuItem::section('Отчеты');
-            yield MenuItem::linkToCrud('Ресурсный учёт по задачам', 'fas fa-users', User::class);
-            yield MenuItem::linkToCrud('Ресурсный учёт по исполнителям', 'fas fa-user-secret', Role::class);
+            yield MenuItem::linkToRoute('Ресурсный учёт по задачам', 'fa-solid fa-align-justify', 'report-tasks');
+            yield MenuItem::linkToCrud('Ресурсный учёт по исполнителям', 'fa-solid fa-align-justify', Role::class);
 
             yield MenuItem::section('Справочники');
             yield MenuItem::linkToCrud('Проекты', 'fa-solid fa-sitemap', Project::class);
