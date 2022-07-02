@@ -96,6 +96,9 @@ class DashboardController extends AbstractDashboardController
             $to = new \DateTime($to);
         }
 
+        $from->setTime(0, 0);
+        $to->setTime(23, 59);
+
         $tasks = $taskRepository->createQueryBuilder('t')
             ->leftJoin('t.project', 'p')
             ->leftJoin('t.status', 's')
@@ -111,8 +114,8 @@ class DashboardController extends AbstractDashboardController
                 't.createdAt',
                 't.spenttime'
             ])
-            ->andWhere('t.createdAt > :from')
-            ->andWhere('t.createdAt < :to')
+            ->andWhere('t.createdAt >= :from')
+            ->andWhere('t.createdAt <= :to')
             ->setParameters([
                 'from' => $from,
                 'to' => $to
@@ -170,6 +173,9 @@ class DashboardController extends AbstractDashboardController
             $to = new \DateTime($to);
         }
 
+        $from->setTime(0, 0);
+        $to->setTime(23, 59);
+
         $spreadsheet = new Spreadsheet();
 
         $sheet = $spreadsheet->getActiveSheet();
@@ -201,8 +207,8 @@ class DashboardController extends AbstractDashboardController
                 't.createdAt',
                 't.spenttime'
             ])
-            ->andWhere('t.createdAt > :from')
-            ->andWhere('t.createdAt < :to')
+            ->andWhere('t.createdAt >= :from')
+            ->andWhere('t.createdAt <= :to')
             ->setParameters([
                 'from' => $from,
                 'to' => $to
