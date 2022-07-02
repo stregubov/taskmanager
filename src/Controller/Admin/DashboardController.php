@@ -33,7 +33,11 @@ class DashboardController extends AbstractDashboardController
     #[Route('/admin', name: 'admin')]
     public function index(): Response
     {
-        return $this->redirectToRoute('list');
+        if ($this->security->isGranted('ROLE_ADMIN')) {
+            return $this->redirectToRoute('list');
+        }
+
+        return $this->redirectToRoute('my-tasks');
     }
 
     #[Route('/list', name: 'list')]
@@ -66,8 +70,11 @@ class DashboardController extends AbstractDashboardController
     ): Response {
         $userId = $security->getUser()->getId();
         $query = $taskRepository->createQueryBuilder('t')->
-        where('t.responsible = :userId')->setParameter('userId',
-            $userId)->orderBy('t.id', 'desc')->getQuery();
+        where('t.responsible = :userId')
+            ->setParameter('userId', $userId)
+            ->orderBy('t.id', 'desc')
+            ->getQuery();
+
         $pagination = $paginator->paginate(
             $query,
             $request->query->getInt('page', 1),
@@ -420,7 +427,7 @@ class DashboardController extends AbstractDashboardController
             yield MenuItem::linkToCrud('Приоритеты задач', 'fa-solid fa-exclamation', TaskPriority::class);
             yield MenuItem::linkToCrud('Роли', 'fas fa-user-secret', Role::class);
         } else {
-            yield MenuItem::linkToRoute('Мои задачи', 'fa-solid fa-list-check', 'list');
+            yield MenuItem::linkToRoute('Мои задачи', 'fa-solid fa-list-check', 'my-tasks');
         }
     }
 }

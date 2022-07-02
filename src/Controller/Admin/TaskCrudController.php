@@ -25,6 +25,7 @@ class TaskCrudController extends AbstractCrudController
             ->add('project')
             ->add('status')
             ->add('type')
+            ->add('priority')
             ->add('responsible')
             ->add('createdAt')
             ;
