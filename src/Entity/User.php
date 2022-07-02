@@ -7,11 +7,14 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Doctrine\ORM\PersistentCollection;
+use Symfony\Component\PasswordHasher\Hasher\PasswordHasherFactory;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasher;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: '`user`')]
+#[ORM\HasLifecycleCallbacks]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
@@ -189,7 +192,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     /**
      * @return ArrayCollection
      */
-    public function getGroups(): PersistentCollection
+    public function getGroups()
     {
         return $this->groups;
     }
@@ -197,7 +200,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     /**
      * @param ArrayCollection $groups
      */
-    public function setGroups(ArrayCollection $groups): void
+    public function setGroups($groups): void
     {
         $this->groups = $groups;
     }
@@ -295,5 +298,19 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function __toString(): string
     {
         return '# ' . $this->getId() . " " . $this->getFormatName();
+    }
+
+    #[ORM\PrePersist]
+    public function onPrePersist(): void
+    {
+        $passwordHasherFactory = new PasswordHasherFactory([
+            PasswordAuthenticatedUserInterface::class => ['algorithm' => 'auto'],
+        ]);
+        $passwordHasher = new UserPasswordHasher($passwordHasherFactory);
+
+//        dump($this);
+//        die();
+        $hashedPassword = $passwordHasher->hashPassword($this, $this->password);
+        $this->setPassword($hashedPassword);
     }
 }

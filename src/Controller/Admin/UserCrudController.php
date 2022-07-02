@@ -23,6 +23,7 @@ class UserCrudController extends AbstractCrudController
     {
         yield IdField::new('id')->hideWhenCreating()->setDisabled(true);
         yield EmailField::new('email');
+        yield TextField::new('password')->hideOnIndex()->hideWhenUpdating();
 
         yield AssociationField::new('groups', 'Роли')
             ->setCrudController(RoleCrudController::class)
