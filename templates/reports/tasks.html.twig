@@ -32,6 +32,10 @@
         <br>
         <br>
 
+        {% if tasks is empty %}
+            <p>Не найдены задачи за выбранный промежуток времени</p>
+        {% endif %}
+
         {% if tasks is not empty %}
             <a href="{{ path('report-tasks-excel', {from: from, to: to}) }}" class="btn btn-success">Скачать в Excel</a>
             <table class="table">
