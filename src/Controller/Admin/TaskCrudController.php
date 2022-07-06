@@ -3,6 +3,7 @@
 namespace App\Controller\Admin;
 
 use App\Entity\Task;
+use Doctrine\ORM\EntityManagerInterface;
 use EasyCorp\Bundle\EasyAdminBundle\Config\Filters;
 use EasyCorp\Bundle\EasyAdminBundle\Controller\AbstractCrudController;
 use EasyCorp\Bundle\EasyAdminBundle\Field\AssociationField;
@@ -59,7 +60,6 @@ class TaskCrudController extends AbstractCrudController
 
         yield DateField::new('endDate', 'Дата окончания');
 
-        yield TextField::new('spenttime', 'Затраченное время');
+        yield TextField::new('spenttime', 'Затраченное время')->setHelp('Вводить в формате 1д2ч15м. д - дни, ч - часы, м - минуты');
     }
-
 }

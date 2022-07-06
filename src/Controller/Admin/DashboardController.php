@@ -2,6 +2,9 @@
 
 namespace App\Controller\Admin;
 
+use App\Entity\NotificationChannel;
+use App\Entity\NotificationEvent;
+use App\Entity\NotificationTemplate;
 use App\Entity\Project;
 use App\Entity\Role;
 use App\Entity\Status;
@@ -119,7 +122,7 @@ class DashboardController extends AbstractDashboardController
                 't.id',
                 't.name',
                 't.createdAt',
-                't.spenttime'
+                't.spentTimeHours'
             ])
             ->andWhere('t.createdAt >= :from')
             ->andWhere('t.createdAt <= :to')
@@ -140,7 +143,7 @@ class DashboardController extends AbstractDashboardController
                 'project' => $t['project'],
                 'status' => $t['status'],
                 'responsible' => $name,
-                'spenttime' => $t['spenttime'],
+                'spenttime' => $t['spentTimeHours'],
             ];
         }
 
@@ -212,7 +215,7 @@ class DashboardController extends AbstractDashboardController
                 't.id',
                 't.name',
                 't.createdAt',
-                't.spenttime'
+                't.spentTimeHours'
             ])
             ->andWhere('t.createdAt >= :from')
             ->andWhere('t.createdAt <= :to')
@@ -233,7 +236,7 @@ class DashboardController extends AbstractDashboardController
             $sheet->setCellValue('D' . $index, $task['name']);
             $sheet->setCellValue('E' . $index, $task['status']);
             $sheet->setCellValue('F' . $index, $name);
-            $sheet->setCellValue('G' . $index, $task['spenttime']);
+            $sheet->setCellValue('G' . $index, $task['spentTimeHours']);
 
             $index++;
         }
@@ -295,7 +298,7 @@ class DashboardController extends AbstractDashboardController
                 'count' => count($t['tasks']),
                 'name' => $name,
                 'time' => array_reduce($t['tasks'], function ($carry, $item) {
-                    return $carry + (float)$item['spenttime'];
+                    return $carry + (float)$item['spentTimeHours'];
                 }, 0). ' ч.',
             ];
         }
@@ -368,7 +371,7 @@ class DashboardController extends AbstractDashboardController
                 'count' => count($t['tasks']),
                 'name' => $name,
                 'time' => array_reduce($t['tasks'], function ($carry, $item) {
-                        return $carry + (float)$item['spenttime'];
+                        return $carry + (float)$item['spentTimeHours'];
                     }, 0). ' ч.',
             ];
         }
@@ -426,6 +429,11 @@ class DashboardController extends AbstractDashboardController
             yield MenuItem::linkToCrud('Типы задач', 'fa-solid fa-text-height', TaskType::class);
             yield MenuItem::linkToCrud('Приоритеты задач', 'fa-solid fa-exclamation', TaskPriority::class);
             yield MenuItem::linkToCrud('Роли', 'fas fa-user-secret', Role::class);
+//
+//            yield MenuItem::section('Уведомления');
+//            yield MenuItem::linkToCrud('Типы событий', 'fas fa-user-secret', NotificationEvent::class);
+//            yield MenuItem::linkToCrud('Каналы сообщений', 'fas fa-user-secret', NotificationChannel::class);
+//            yield MenuItem::linkToCrud('Шаблоны сообщений', 'fas fa-user-secret', NotificationTemplate::class);
         } else {
             yield MenuItem::linkToRoute('Мои задачи', 'fa-solid fa-list-check', 'my-tasks');
         }

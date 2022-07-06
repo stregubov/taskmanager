@@ -4,6 +4,7 @@ namespace App\Entity;
 
 use App\Repository\TaskRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\HasLifecycleCallbacks]
 #[ORM\Entity(repositoryClass: TaskRepository::class)]
@@ -38,6 +39,7 @@ class Task
     private $project;
 
     #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    #[Assert\Regex(pattern: '/\d+[дчмДЧМ]+/', message: 'Затраченное время не соответствует шаблону')]
     private $spenttime;
 
     #[ORM\ManyToOne(targetEntity: User::class)]
@@ -50,6 +52,9 @@ class Task
     #[ORM\ManyToOne(targetEntity: TaskPriority::class)]
     #[ORM\JoinColumn(nullable: false)]
     private $priority;
+
+    #[ORM\Column(type: 'string', length: 255)]
+    private $spentTimeHours;
 
     public function getId(): ?int
     {
@@ -195,6 +200,18 @@ class Task
     public function setPriority(?TaskPriority $priority): self
     {
         $this->priority = $priority;
+
+        return $this;
+    }
+
+    public function getSpentTimeHours(): ?string
+    {
+        return $this->spentTimeHours;
+    }
+
+    public function setSpentTimeHours(string $spentTimeHours): self
+    {
+        $this->spentTimeHours = $spentTimeHours;
 
         return $this;
     }
